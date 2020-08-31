@@ -1,0 +1,28 @@
+<coordinator-app name="VideoPlayBatchJob"
+  frequency="15 0,2,4,6,8,10,12,14,16,18,20,22 * * *"
+  start="${start_date}" end="${end_date}" timezone="Asia/Calcutta"
+  xmlns="uri:oozie:coordinator:0.2"
+  >
+  <controls>
+    <execution>FIFO</execution>
+  </controls>
+  <action>
+    <workflow>
+      <app-path>${wf_application_path}</app-path>
+      <configuration>
+        <property>
+            <name>oozie.use.system.libpath</name>
+            <value>True</value>
+        </property>
+        <property>
+            <name>start_date</name>
+            <value>${start_date}</value>
+        </property>
+        <property>
+            <name>end_date</name>
+            <value>${end_date}</value>
+        </property>
+      </configuration>
+   </workflow>
+  </action>
+</coordinator-app>

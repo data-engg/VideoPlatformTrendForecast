@@ -1,0 +1,142 @@
+<workflow-app name="VideoPlay" xmlns="uri:oozie:workflow:0.5">
+    <start to="fork-31bb"/>
+    <kill name="Kill">
+        <message>Action failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <action name="spark-f731">
+        <spark xmlns="uri:oozie:spark-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                  <delete path="${nameNode}/user/edureka_735821/VideoPlayLake/Inbound/xml"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>oozie.action.sharelib.for.spark</name>
+                    <value>spark2</value>
+                </property>
+            </configuration>
+            <master>yarn</master>
+            <mode>client</mode>
+            <name>Sample 20% records from dataset</name>
+              <class>batch.SampleFields</class>
+            <jar>mid-project-2_2.11-0.1.jar</jar>
+              <arg>/bigdatapgp/common_folder/midproject2/datasets/video_plays.xml</arg>
+              <arg>/user/edureka_735821/VideoPlayLake/Inbound/</arg>
+              <arg>xml</arg>
+            <file>/user/edureka_735821/TrendForecast/target/scala-2.11/mid-project-2_2.11-0.1.jar#mid-project-2_2.11-0.1.jar</file>
+        </spark>
+        <ok to="spark-eb08"/>
+        <error to="Kill"/>
+    </action>
+    <action name="spark-b713">
+        <spark xmlns="uri:oozie:spark-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <prepare>
+                  <delete path="${nameNode}/user/edureka_735821/VideoPlayLake/Inbound/csv"/>
+            </prepare>
+            <configuration>
+                <property>
+                    <name>oozie.action.sharelib.for.spark</name>
+                    <value>spark2</value>
+                </property>
+            </configuration>
+            <master>yarn</master>
+            <mode>client</mode>
+            <name>Sample 20% records from dataset</name>
+              <class>batch.SampleFields</class>
+            <jar>mid-project-2_2.11-0.1.jar</jar>
+              <arg>/bigdatapgp/common_folder/midproject2/datasets/video_plays.csv </arg>
+              <arg>/user/edureka_735821/VideoPlayLake/Inbound/</arg>
+              <arg>csv</arg>
+            <file>/user/edureka_735821/TrendForecast/target/scala-2.11/mid-project-2_2.11-0.1.jar#mid-project-2_2.11-0.1.jar</file>
+        </spark>
+        <ok to="spark-0913"/>
+        <error to="Kill"/>
+    </action>
+    <fork name="fork-31bb">
+        <path start="spark-f731" />
+        <path start="spark-b713" />
+    </fork>
+    <join name="join-362d" to="hive2-9b55"/>
+    <action name="spark-eb08">
+        <spark xmlns="uri:oozie:spark-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>oozie.action.sharelib.for.spark</name>
+                    <value>spark2</value>
+                </property>
+            </configuration>
+            <master>yarn</master>
+            <mode>client</mode>
+            <name>XML batch processing for enrichment</name>
+              <class>batch.VideoPlayXMLBatch</class>
+            <jar>mid-project-2_2.11-0.1.jar</jar>
+              <spark-opts>--packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.12 --conf spark.cassandra.auth.username=edureka_735821 --conf spark.cassandra.auth.password=edureka_735821iyktd</spark-opts>
+              <arg>VideoPlayLake/Inbound/xml</arg>
+              <arg>videos.video_play_stg</arg>
+            <file>/user/edureka_735821/TrendForecast/target/scala-2.11/mid-project-2_2.11-0.1.jar#mid-project-2_2.11-0.1.jar</file>
+        </spark>
+        <ok to="join-362d"/>
+        <error to="Kill"/>
+    </action>
+    <action name="spark-0913">
+        <spark xmlns="uri:oozie:spark-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>oozie.action.sharelib.for.spark</name>
+                    <value>spark2</value>
+                </property>
+            </configuration>
+            <master>yarn</master>
+            <mode>client</mode>
+            <name>CSV batch processing for enrichment</name>
+              <class>batch.VideoPlayCSVBatch</class>
+            <jar>mid-project-2_2.11-0.1.jar</jar>
+              <spark-opts>--packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.12 --conf spark.cassandra.auth.username=edureka_735821 --conf spark.cassandra.auth.password=edureka_735821iyktd</spark-opts>
+              <arg>VideoPlayLake/Inbound/csv</arg>
+              <arg>videos.video_play_stg</arg>
+            <file>/user/edureka_735821/TrendForecast/target/scala-2.11/mid-project-2_2.11-0.1.jar#mid-project-2_2.11-0.1.jar</file>
+        </spark>
+        <ok to="join-362d"/>
+        <error to="Kill"/>
+    </action>
+    <action name="hive2-9b55" cred="hive2">
+        <hive2 xmlns="uri:oozie:hive2-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <jdbc-url>jdbc:hive2://hive.edu.cloudlab.com:10000/default</jdbc-url>
+            <script>/user/edureka_735821/TrendForecast/hive/video_hive.sql</script>
+        </hive2>
+        <ok to="spark-0b7c"/>
+        <error to="Kill"/>
+    </action>
+    <action name="spark-0b7c">
+        <spark xmlns="uri:oozie:spark-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>oozie.action.sharelib.for.spark</name>
+                    <value>spark2</value>
+                </property>
+            </configuration>
+            <master>yarn</master>
+            <mode>client</mode>
+            <name>Analysis for Video Plays table(hive)</name>
+              <class>batch.VideoPlayAnalysis</class>
+            <jar>mid-project-2_2.11-0.1.jar</jar>
+              <spark-opts>--packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.12  --conf spark.cassandra.auth.username=edureka_735821 --conf spark.cassandra.auth.password=edureka_735821iyktd</spark-opts>
+              <arg>videos.video_play</arg>
+            <file>/user/edureka_735821/TrendForecast/target/scala-2.11/mid-project-2_2.11-0.1.jar#mid-project-2_2.11-0.1.jar</file>
+        </spark>
+        <ok to="End"/>
+        <error to="Kill"/>
+    </action>
+    <end name="End"/>
+</workflow-app>
